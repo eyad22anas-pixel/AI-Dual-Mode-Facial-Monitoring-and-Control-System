@@ -68,8 +68,8 @@ csv_header = [
 ]
 # Mouse control settings(you ahv eto do this for the libraries)
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
-pyautogui.FAILSAFE = False  # disable failsafe so mouse can go to corners
-pyautogui.PAUSE = 0  # no delay between commands for smooth movement
+pyautogui.FAILSAFE = False  # disable failsafe so mouse can go to corners (it barely works)
+pyautogui.PAUSE = 0  # no delay between commands for smooth movement idk this makes it a bit heavy
 SMOOTHING_FACTOR = 0.15  
 prev_mouse_x = SCREEN_WIDTH // 2
 prev_mouse_y = SCREEN_HEIGHT // 2
@@ -146,12 +146,12 @@ def detect_Blink(EAR,fps):
         
         if blinking == True:
             blink_duration_sec = closed_frames / fps
-            # use a small threshold in seconds (50 ms) rather than comparing frames to 1.7
+            # use a small threshold in seconds (50 ms)
             if blink_duration_sec >= 0.05:
                 blinks = blinks+1
                 #for AI 2
                 blink_timestamps.append(time.time())
-                blink_durations_history.append(blink_duration_sec)  # FIX: was missing this line
+                blink_durations_history.append(blink_duration_sec) 
             closed_frames = 0
             blinking = False
 
@@ -287,7 +287,7 @@ with mp_face_mesh.FaceMesh(
         key = cv2.waitKey(1) & 0xFF
         there, frame = webcam.read()  # reads camera every frame
         # default values for when no faces is detected cuz it cause eror for some reason (figuring out how to debug this took a whole frickin day)
-        label = None  # FIX: reset label each frame so it doesn't persist
+        label = None  #reset label each frame so it doesn't persist
         # changing the output to something mediapip can undertand
         if there == True:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # gets rgb values for pixels in frame (yap)
