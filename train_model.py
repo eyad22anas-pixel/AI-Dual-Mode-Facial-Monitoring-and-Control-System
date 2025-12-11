@@ -4,10 +4,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import tensorflow as tf
 import os
+#ignoRE CORUPT SUFFFFFFF
+df = pd.read_csv("datafoeAI1.csv", on_bad_lines='skip', engine='python')
 #this is a very very simnple ai using ML did not have time to use CNN
-# -------------------------------
 # 1. LOAD CSV DATA
-# -------------------------------
 df = pd.read_csv("datafoeAI1.csv")
 
 # Drop any empty rows (important!)
@@ -23,7 +23,7 @@ labels_putputted= df["Label"].values
 encode_for_x = LabelEncoder()
 y_encoded = encode_for_x.fit_transform(labels_putputted)
 
-# 3. TRAIN/TEST SPLIT (FIXED: now splits the features, not the encoder)
+# 3. TRAIN/TEST SPLIT ( now splits the features, not the encoder)
 X_train, X_test, y_train, y_test = train_test_split(
     featuers_needed, y_encoded, test_size=0.2, random_state=42
 )
@@ -58,8 +58,8 @@ history = model.fit(
 )
 
 #EVALUATE cuz cooool
-loss, acc = model.evaluate(X_test_no, y_test)
-print(f"\nTest Accuracy: {acc*100:.2f}%")
+loss, acccc = model.evaluate(X_test_no, y_test)
+print(f"\nTest Accuracy: {acccc*100:.2f}%")
 
 # 8. SAVE MODEL + LABELS + SCALER+cooool
 model.save("gaze_direction_model.keras")
