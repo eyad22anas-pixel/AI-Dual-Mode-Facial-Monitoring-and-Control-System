@@ -4,18 +4,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import tensorflow as tf
 import os
+
 #ignoRE CORUPT SUFFFFFFF
 df = pd.read_csv("datafoeAI1.csv", on_bad_lines='skip', engine='python')
+gaze_labels = ['Left', 'Right', 'Up', 'Down', 'Center']
+df = df[df['Label'].isin(gaze_labels)]
 #this is a very very simnple ai using ML did not have time to use CNN
 # 1. LOAD CSV DATA
-df = pd.read_csv("datafoeAI1.csv")
-
-# Drop any empty rows (important!)
 df = df.dropna()
 
 # Input features
 featuers_needed = df[["iris_x_norm", "iris_y_norm", "eye_width", "eye_height"]].values
-
+#filted labels
 # Output labels
 labels_putputted= df["Label"].values
 
@@ -35,8 +35,12 @@ X_test_no = scaler.transform(X_test)
 
 # 5. BUILD MODEL
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(32, activation='relu', input_shape=(4,)),
-    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(4,)), 
+    tf.keras.layers.Dropout(0.3),  
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(32, activation='relu'),  
+    tf.keras.layers.Dropout(0.2),
     tf.keras.layers.Dense(len(encode_for_x.classes_), activation='softmax')
 ])
 
@@ -51,7 +55,7 @@ model.summary()
 #cus cool
 history = model.fit(
     X_train_yes, y_train,
-    epochs=30,
+    epochs=50,
     batch_size=32,
     validation_split=0.1,
     verbose=1
@@ -67,4 +71,4 @@ np.save("gaze_label_classes.npy", encode_for_x.classes_)
 np.save("gaze_scaler_mean.npy", scaler.mean_)
 np.save("gaze_scaler_scale.npy", scaler.scale_)
 
-#91% accuracy sheeesh
+#80% accuracy sheeesh
