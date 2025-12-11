@@ -1,8 +1,8 @@
 #basic initialization(toooooooooo much librariess i am so tireedddd)(this is acteully so annoying i have no time to organize code so everything in rondom place and beacuse of that erro keep happening aaaaaaaaaaah)
 import cv2
-import keras
 import csv
 import os
+import keras
 import mediapipe as mp
 from math import dist
 import numpy as np
@@ -14,7 +14,6 @@ import winsound
 import pyautogui 
 #ask user which mode they want
 MODE = input("Which mode Driver_Safety or Mouse (very case sensetive)")
-# Load the trained model
 model = tf.keras.models.load_model("gaze_direction_model.keras")
 # Load label classes
 label_classes = np.load("gaze_label_classes.npy",allow_pickle= True)# Loads the gaze direction labels (Left, Right, Up, Down, Center)
@@ -68,8 +67,8 @@ csv_header = [
 ]
 # Mouse control settings(you ahv eto do this for the libraries)
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
-pyautogui.FAILSAFE = False  # disable failsafe so mouse can go to corners (it barely works)
-pyautogui.PAUSE = 0  # no delay between commands for smooth movement idk this makes it a bit heavy
+pyautogui.FAILSAFE = False  # disable failsafe so mouse can go to corners
+pyautogui.PAUSE = 0  # no delay between commands for smooth movement
 SMOOTHING_FACTOR = 0.15  
 prev_mouse_x = SCREEN_WIDTH // 2
 prev_mouse_y = SCREEN_HEIGHT // 2
@@ -93,8 +92,8 @@ closed_frames = 0
 blinks = 0
 blinking = False
 TF_ENABLE_ONEDNN_OPTS=0
-HORIZONTAL_HISTORY = deque(maxlen=5)  # last 5 horizontal gaze values
-VERTICAL_HISTORY = deque(maxlen=5)    # last 5 vertical gaze values
+HORIZONTAL_HISTORY = deque(maxlen=15)  # last 15 horizontal gaze values
+VERTICAL_HISTORY = deque(maxlen=15)    # last 15 vertical gaze values
 
 #landmark LOCATIONS for eye tracking
 leftEye = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
@@ -146,12 +145,12 @@ def detect_Blink(EAR,fps):
         
         if blinking == True:
             blink_duration_sec = closed_frames / fps
-            # use a small threshold in seconds (50 ms)
+            # use a small threshold in seconds (50 ms) rather than comparing frames to 1.7
             if blink_duration_sec >= 0.05:
                 blinks = blinks+1
                 #for AI 2
                 blink_timestamps.append(time.time())
-                blink_durations_history.append(blink_duration_sec) 
+                blink_durations_history.append(blink_duration_sec)  # FIX: was missing this line
             closed_frames = 0
             blinking = False
 
@@ -229,7 +228,7 @@ def gaze_detection(lefteye_points, Righteye_points, leftiris_points, rightiris_p
     # Average normalized iris positions for both eyes
     iris_x_norm = (left_iris_x_norm + right_iris_x_norm) / 2
     iris_y_norm = (left_iris_y_norm + right_iris_y_norm) / 2
-    # Use left eye width and height for feature consistency
+    # Use left eye width and height for feature consisten cy
     eye_width = left_eye_width
     eye_height = left_eye_height
     # Clip horizontal gaze between 0 and 1 (sometimes can go out of range)
@@ -287,7 +286,7 @@ with mp_face_mesh.FaceMesh(
         key = cv2.waitKey(1) & 0xFF
         there, frame = webcam.read()  # reads camera every frame
         # default values for when no faces is detected cuz it cause eror for some reason (figuring out how to debug this took a whole frickin day)
-        label = None  #reset label each frame so it doesn't persist
+        label = None  # reset label each frame so it doesn't persist
         # changing the output to something mediapip can undertand
         if there == True:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # gets rgb values for pixels in frame (yap)
@@ -408,14 +407,15 @@ with mp_face_mesh.FaceMesh(
                     # Predict probabilities for drowsiness
                     predicted_label_blink = "Unknown"
                     if model_blink is not None:
-                        try:
-                            pred_probs_blink = model_blink.predict(features_blink_scaled)
-                            predicted_class_index_blink = np.argmax(pred_probs_blink)
-                        except Exception as e:
-                            print("WARNING: model_blink.predict failed:", e)
-                            predicted_label_blink = "Error"
+                        print(f"DEBUG: features_blink_scaled = {features_blink_scaled}")
+                        print(f"DEBUG: features_blink_scaled shape = {features_blink_scaled.shape}")
+                        
+                        pred_probs_blink = model_blink.predict(features_blink_scaled, verbose=0)  # Add verbose=0 to suppress output this how python works dont ask me why
+                        
+                        predicted_class_index_blink = np.argmax(pred_probs_blink)
+                        predicted_label_blink = blink_classes[predicted_class_index_blink] 
                     else:
-                         #fallback heuristic (just in case AI become dummy)
+                         #fallback heuristic (just in case AI not work)
                         if avg_blink_duration > 0.5 or longest_eye_close > 1.0:
                             predicted_label_blink = "Very Tired"
                         elif blink_rate < 0.05:
@@ -424,7 +424,7 @@ with mp_face_mesh.FaceMesh(
                             predicted_label_blink = "Normal"
 
                     # Display drowsiness prediction
-                    #cv2.putText(frame, f'Drowsiness: {predicted_label_blink}', (30, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    cv2.putText(frame, f'Drowsiness: {predicted_label_blink}', (30, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
                     # key press to set label (moved before CSV writing)
                     if key == ord('l') or key == ord('L'):
