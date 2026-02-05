@@ -12,6 +12,8 @@ from collections import deque
 import time
 import winsound
 import pyautogui 
+#idk what this do but when i run teh thing it says to put this so yeaaaaah
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 #ask user which mode they want
 MODE = input("Which mode Driver_Safety or Mouse (very case sensetive)")
 model = tf.keras.models.load_model("gaze_direction_model.keras")
@@ -25,7 +27,7 @@ scaler_blink = StandardScaler()
 scaler_blink.mean_ = scaler_blink_mean
 scaler_blink.scale_ = scaler_blink_scale
 scaler_blink.var_ = scaler_blink_scale ** 2
-scaler_blinkfeatures_in_ = 5
+scaler_blink.n_features_in_ = 5
 #loading models
 model_blink = tf.keras.models.load_model("blink_ear_aggregate_model.keras")
 
@@ -43,7 +45,7 @@ BLINK_DURATION_WINDOW = 100
 blink_durations_history = deque(maxlen=BLINK_DURATION_WINDOW)
 longest_eye_close = 0
 current_eye_close = 0
-# NEW: Track how long user has been in alerting state
+# Track how long user has been in alerting state
 not_center_start_time = None  # timestamp when user first looked away
 tired_start_time = None  # timestamp when user first became very tired
 ALERT_DELAY_SECONDS = 5  # wait 5 seconds before alerting
@@ -81,8 +83,9 @@ if write_header:
 total_frame = 0
 
 #just for safity so nothing breaks when there is fps eror(idk if this really needed but i will put it anywyas i mean i have a good pc i know some of you fellas are broke and dont have that much money lol)
-if fps == 0:
+if fps == 0 or fps < 10 or fps > 120:
     fps = 30
+
 
 #setting some varaibles cuz me cool(This block initializes the FaceMesh detector.)
 mp_face_mesh = mp.solutions.face_mesh
@@ -91,7 +94,6 @@ stop = False
 closed_frames = 0
 blinks = 0
 blinking = False
-TF_ENABLE_ONEDNN_OPTS=0
 HORIZONTAL_HISTORY = deque(maxlen=15)  # last 15 horizontal gaze values
 VERTICAL_HISTORY = deque(maxlen=15)    # last 15 vertical gaze values
 
@@ -138,10 +140,10 @@ def detect_Blink(EAR,fps):
         # update current_eye_closure in seconds
         current_eye_close = closed_frames / fps
     else:
-        # FIX: update longest closure if current larger, then reset current
+        #  update longest closure if current larger, then reset current
         if current_eye_close > longest_eye_close:
             longest_eye_close = current_eye_close
-        current_eye_closure = 0  
+        current_eye_close = 0  
         
         if blinking == True:
             blink_duration_sec = closed_frames / fps
@@ -270,6 +272,7 @@ def map_gaze_to_screen(horizontal_gaze, vertical_gaze, smoothing=SMOOTHING_FACTO
     prev_mouse_y = smooth_y
     
     return smooth_x, smooth_y
+
 def getPoints(table): #this thing is so frickin compicatedddddd(it is easy i jsut have nioo time to compleeteeee)
     return [landmarks_list[i] for i in table]
 
@@ -348,11 +351,9 @@ with mp_face_mesh.FaceMesh(
                     # call dunciton head pose
                     yaw, pitch, roll = head_Pose_Estimation(camera_matrix, image_points, model_points, dist_coeffs)
                     # call gaze function
-                    horizontal_gaze, vertical_gaze, iris_x_norm, iris_y_norm, eye_width, eye_height = gaze_detection(left_eye_points, right_eye_points, left_iris_points, right_iris_points,left_eye_boundaries_points, Right_eye_boundaries_points, debug=True)
+                    horizontal_gaze, vertical_gaze, iris_x_norm, iris_y_norm, eye_width, eye_height = gaze_detection(left_eye_points, right_eye_points, left_iris_points, right_iris_points,left_eye_boundaries_points, Right_eye_boundaries_points, debug=False)
 
-                    # blink duration second Ai model
-                    blink_durations_history.append(blink_duration)
-
+                    
                     # getting values from the lists we made
                     ear_mean = np.mean(EAR_history) if len(EAR_history) > 0 else 0
                     ear_variance = np.var(EAR_history) if len(EAR_history) > 0 else 0
@@ -384,7 +385,10 @@ with mp_face_mesh.FaceMesh(
                     features_scaled = scaler.transform(features)
 
                     # Predict class probabilitiesn
-                    pred_probs = model.predict(features_scaled)
+                    if total_frame % 3 == 0:
+                        pred_probs = model.predict(features_scaled, verbose=0)
+                        predicted_class_index = np.argmax(pred_probs)
+                        predicted_label = label_classes[predicted_class_index]
 
                     # Get the class 
                     predicted_class_index = np.argmax(pred_probs)
@@ -453,6 +457,7 @@ with mp_face_mesh.FaceMesh(
                     ]
                     if label is not None and label != "":
                         csv_writer.writerow(frame_data)
+                        csv_file.flush()
                         print(f"Saved frame {total_frame} with label {label}")
                     total_frame += 1
                     if MODE == "Driver_Safety":
@@ -512,8 +517,8 @@ with mp_face_mesh.FaceMesh(
                         # Move the mouse
                         pyautogui.moveTo(mouse_x, mouse_y)
                         
-                        # Blink to click (quick blink = click)
-                        if blink_duration>5:  # quick blink
+                        # Blink to click 
+                        if predicted_label_blink == "Blink":  
                             pyautogui.click()
                             cv2.putText(frame, "CLICK!", (width//2 - 50, 50),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
@@ -526,7 +531,7 @@ with mp_face_mesh.FaceMesh(
                         cv2.circle(frame, (int(horizontal_gaze * width), int(vertical_gaze * height)), 
                                 10, (0, 255, 255), 2)
 
-            cv2.imshow("6.7", frame)  # show the frame (with landmarks)
+            cv2.imshow("6.7Eyad is so coooool", frame)  # show the frame (with landmarks)
 
         
 
@@ -535,7 +540,7 @@ with mp_face_mesh.FaceMesh(
             stop = True
         elif there == False:
             print("there is no webcam idiot")
-
+            #Prevents lag
 csv_file.close()
 webcam.release()
 cv2.destroyAllWindows()
