@@ -1,3 +1,4 @@
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -35,12 +36,11 @@ X_test_no = scaler.transform(X_test)
 
 # 5. BUILD MODEL
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(64, activation='relu', input_shape=(4,)), 
-    tf.keras.layers.Dropout(0.3),  
-    tf.keras.layers.Dense(64, activation='relu'),
-    tf.keras.layers.Dropout(0.3),
-    tf.keras.layers.Dense(32, activation='relu'),  
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(4,)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(16, activation='relu'),
     tf.keras.layers.Dense(len(encode_for_x.classes_), activation='softmax')
 ])
 
@@ -53,12 +53,12 @@ model.compile(
 model.summary()
 
 #cus cool
+#information
 history = model.fit(
     X_train_yes, y_train,
-    epochs=50,
-    batch_size=32,
-    validation_split=0.1,
-    verbose=1
+    epochs=90,
+    batch_size=16, 
+    validation_split=0.2,
 )
 
 #EVALUATE cuz cooool
@@ -70,5 +70,4 @@ model.save("gaze_direction_model.keras")
 np.save("gaze_label_classes.npy", encode_for_x.classes_)
 np.save("gaze_scaler_mean.npy", scaler.mean_)
 np.save("gaze_scaler_scale.npy", scaler.scale_)
-
-#80% accuracy sheeesh
+joblib.dump(scaler, "scaler.pkl")
