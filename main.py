@@ -1,4 +1,5 @@
 #basic initialization(toooooooooo much librariess i am so tireedddd)(this is acteully so annoying i have no time to organize code so everything in rondom place and beacuse of that erro keep happening aaaaaaaaaaah)
+import joblib
 import cv2
 import csv
 import os
@@ -384,15 +385,11 @@ with mp_face_mesh.FaceMesh(
                     # Scale features 
                     features_scaled = scaler.transform(features)
 
-                    # Predict class probabilitiesn
+                    # Predict class probabilitiesn (every 3 frames just for performance)
                     if total_frame % 3 == 0:
                         pred_probs = model.predict(features_scaled, verbose=0)
                         predicted_class_index = np.argmax(pred_probs)
                         predicted_label = label_classes[predicted_class_index]
-
-                    # Get the class 
-                    predicted_class_index = np.argmax(pred_probs)
-                    predicted_label = label_classes[predicted_class_index]
 
                     #N predicted_label
                     cv2.putText(frame, f'Predicted Gaze: {predicted_label}', (30, 300),
