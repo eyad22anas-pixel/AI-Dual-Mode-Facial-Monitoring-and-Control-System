@@ -1,3 +1,4 @@
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -55,7 +56,7 @@ model.summary()
 # train the thing
 history = model.fit(
     X_train_scaled, y_train,
-    epochs=30,
+    epochs=50,
     batch_size=32,
     validation_split=0.1,
     verbose=1
@@ -70,5 +71,4 @@ model.save("blink_ear_aggregate_model.keras")
 np.save("blink_ear_label_classes.npy", label_encoder.classes_)
 np.save("blink_ear_scaler_mean.npy", scaler.mean_)
 np.save("blink_ear_scaler_scale.npy", scaler.scale_)
-
 #Test Accuracy: 81.82%% (sheeeeeeeeeesh crazy)
