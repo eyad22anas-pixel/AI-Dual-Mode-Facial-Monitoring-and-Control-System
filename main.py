@@ -296,7 +296,7 @@ with mp_face_mesh.FaceMesh(
                     mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_CONTOURS)  # overlays landmarks over the frame (yap)
 
                     height, width, _ = frame.shape
-                    # CAMERA MATRIX HERE(Given 3D points of a face (nose, chin, eye corners, etc.) and their 2D positions in the camera image, how is the head rotated and positioned in 3D space? that is why we need this honestly hurts my brain)
+                    # camera matrix def - (Given 3D points of a face (nose, chin, eye corners, etc.) and their 2D positions in the camera image, how is the head rotated and positioned in 3D space? that is why we need this honestly hurts my brain)
                     focal_length = width  # how zoomed in the camera is
                     center = (width / 2, height / 2) 
                     camera_matrix = np.array([  #
@@ -524,6 +524,7 @@ with mp_face_mesh.FaceMesh(
 csv_file.close()
 webcam.release()
 cv2.destroyAllWindows()
+
 
 
 
