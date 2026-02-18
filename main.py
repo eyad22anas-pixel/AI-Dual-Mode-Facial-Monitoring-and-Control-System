@@ -17,27 +17,23 @@ import pyautogui
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 #ask user which mode they want
 MODE = input("Which mode Driver_Safety or Mouse (very case sensetive)")
+#AI yap loading AI stuff
 model = tf.keras.models.load_model("gaze_direction_model.keras")
-# Load label classes
-label_classes = np.load("gaze_label_classes.npy",allow_pickle= True)# Loads the gaze direction labels (Left, Right, Up, Down, Center)
-
-# These are minimal loads to define scaler_blink, model_blink, encoder_blink used later.
-scaler_blink_mean = np.load("blink_ear_scaler_mean.npy", allow_pickle= True) #Pickle is Python's way of saving complex data (like strings, lists, or objects) to a file.(pickle realy???)
-scaler_blink_scale = np.load("blink_ear_scaler_scale.npy",allow_pickle= True) #Pickle is Python's way of saving complex data (like strings, lists, or objects) to a file.(whyb  is this called pickle brub)
+label_classes = np.load("gaze_label_classes.npy",allow_pickle= True
+scaler_blink_mean = np.load("blink_ear_scaler_mean.npy", allow_pickle= True) #Pickle is Python's way of saving complex data (pickle realy???)
+scaler_blink_scale = np.load("blink_ear_scaler_scale.npy",allow_pickle= True) 
 scaler_blink = StandardScaler()
 scaler_blink.mean_ = scaler_blink_mean
 scaler_blink.scale_ = scaler_blink_scale
 scaler_blink.var_ = scaler_blink_scale ** 2
 scaler_blink.n_features_in_ = 5
-#loading models
 model_blink = tf.keras.models.load_model("blink_ear_aggregate_model.keras")
-
 blink_classes = np.load("blink_ear_label_classes.npy", allow_pickle= True)
 
 #stuff for alert
 alert_cooldown = 0  
 ALERT_COOLDOWN_FRAMES = 60  
-# --- DEQUE INITIALIZATION ---
+#deqe
 EAR_WINDOW_SIZE = 100
 EAR_history = deque(maxlen=EAR_WINDOW_SIZE)
 MAX_BLINK = 100
@@ -47,17 +43,17 @@ blink_durations_history = deque(maxlen=BLINK_DURATION_WINDOW)
 longest_eye_close = 0
 current_eye_close = 0
 # Track how long user has been in alerting state
-not_center_start_time = None  # timestamp when user first looked away
-tired_start_time = None  # timestamp when user first became very tired
-ALERT_DELAY_SECONDS = 5  # wait 5 seconds before alerting
+not_center_start_time = None  
+tired_start_time = None  
+ALERT_DELAY_SECONDS = 5  
 # Load scaler parameters and recreate scaler
 scaler_mean = np.load("gaze_scaler_mean.npy", allow_pickle= True)
 scaler_scale = np.load("gaze_scaler_scale.npy", allow_pickle= True)
 scaler = StandardScaler()
 scaler.mean_ = scaler_mean
 scaler.scale_ = scaler_scale
-scaler.var_ = scaler_scale ** 2  # needed for some sklearn versions
-scaler.n_features_in_ = 4        # number of features
+scaler.var_ = scaler_scale ** 2  
+scaler.n_features_in_ = 4        
 webcam = cv2.VideoCapture(0)
 fps = webcam.get(cv2.CAP_PROP_FPS)
 #saving data to train ai later
@@ -70,8 +66,8 @@ csv_header = [
 ]
 # Mouse control settings(you ahv eto do this for the libraries)
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
-pyautogui.FAILSAFE = False  # disable failsafe so mouse can go to corners
-pyautogui.PAUSE = 0  # no delay between commands for smooth movement
+pyautogui.FAILSAFE = False  
+pyautogui.PAUSE = 0  
 SMOOTHING_FACTOR = 0.15  
 prev_mouse_x = SCREEN_WIDTH // 2
 prev_mouse_y = SCREEN_HEIGHT // 2
@@ -88,7 +84,7 @@ if fps == 0 or fps < 10 or fps > 120:
     fps = 30
 
 
-#setting some varaibles cuz me cool(This block initializes the FaceMesh detector.)
+#setting some varaibles cuz me cool(This initializes the FaceMesh detector.)
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
 stop = False
@@ -127,33 +123,30 @@ def getEyeMetrics(eyePoints):
 
 #blink detection cuz why not
 def detect_Blink(EAR,fps):
-    #making them gloval so i can change there values (this how python works)
+#honestly it gives eror with out global so i just put global no idea why that is
     global blinking, closed_frames, blinks, blink_timestamps
     global current_eye_close, longest_eye_close
     global blink_durations_history
-
+    
     if EAR <=0.31:
         if not blinking:
             blinking = True
-            # start counting closure duration
             current_eye_close = 0.0
         closed_frames = closed_frames+1
-        # update current_eye_closure in seconds
         current_eye_close = closed_frames / fps
     else:
-        #  update longest closure if current larger, then reset current
         if current_eye_close > longest_eye_close:
             longest_eye_close = current_eye_close
         current_eye_close = 0  
         
         if blinking == True:
             blink_duration_sec = closed_frames / fps
-            # use a small threshold in seconds (50 ms) rather than comparing frames to 1.7
+
             if blink_duration_sec >= 0.05:
                 blinks = blinks+1
                 #for AI 2
                 blink_timestamps.append(time.time())
-                blink_durations_history.append(blink_duration_sec)  # FIX: was missing this line
+                blink_durations_history.append(blink_duration_sec) 
             closed_frames = 0
             blinking = False
 
@@ -163,32 +156,32 @@ def detect_Blink(EAR,fps):
 #calculating blink rate
 def calculate_blink_rate(blink_timestamps, window_seconds=10):
     current_time = time.time()
+    
     # Keep only blinks inside the window
     while blink_timestamps and blink_timestamps[0] < current_time - window_seconds:
         blink_timestamps.popleft()
-    return len(blink_timestamps) / window_seconds  # blinks per second
-
+    return len(blink_timestamps) / window_seconds  
+#why not
 def average_blink_duration(blink_durations_history):
     if len(blink_durations_history) == 0:
         return 0
     return np.mean(blink_durations_history)
 
 def head_Pose_Estimation(camera_matrix, points, In_real_life_points, dist_coeffs ):
-      # SolvePnP returns rotation and translation vectors
+    
     sucess, rotation_vector, translation_vector = cv2.solvePnP(In_real_life_points, points, camera_matrix, dist_coeffs)
 
-    # Convert rotation vector to rotation matrix (a 3x3 one to be specofic)
+    # Convert rotation vector to rotation matrix
     rotation_matrix, _ = cv2.Rodrigues(rotation_vector)
 
     # Calculate Euler angles from rotation matrix #Euler angles are a set of three angles that describe the orientation of a rigid body in 3D space by defining a sequence of three successive rotations around the object's principal axes (yap of euler)
-    # clamp value passed to arcsin for numerical safety
     val = -rotation_matrix[2, 0]
     if val > 1.0: val = 1.0
     if val < -1.0: val = -1.0
     pitch = np.arcsin(val)
     yaw = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
     roll = np.arctan2(rotation_matrix[2, 1], rotation_matrix[2, 2])
-    # Convert radians to degrees (omg me know trig me so coooooooool)
+    # Convert radians to degrees (omg me know trig me so cool)
     pitch = np.degrees(pitch)
     yaw = np.degrees(yaw)
     roll = np.degrees(roll)
@@ -197,7 +190,7 @@ def head_Pose_Estimation(camera_matrix, points, In_real_life_points, dist_coeffs
 #gaze detection wouhhhh
 def gaze_detection(lefteye_points, Righteye_points, leftiris_points, rightiris_points, left_eye_boundaries_points, Right_eye_boundaries_points, debug=False):
     epsilon = 1e-5  # tiny number to avoid zero division
-    #the yap of the century is aobut to begin get ready chat(this is torture disguised as equations)
+    #the yap of the century is aobut to begin get ready(this is torture disguised as equations)
     left_eye_width = dist_2d(lefteye_points[0], lefteye_points[1]) + epsilon
     right_eye_width = dist_2d(Righteye_points[0], Righteye_points[1]) + epsilon
     # Average bottom and top points of eyes for vertical metrics
@@ -207,16 +200,16 @@ def gaze_detection(lefteye_points, Righteye_points, leftiris_points, rightiris_p
     average_left_eye_top = np.mean([lefteye_points[2], lefteye_points[3], lefteye_points[4]], axis=0)
     left_eye_height = dist_2d(average_left_eye_bottom, average_left_eye_top) + epsilon
     right_eye_height = dist_2d(average_right_eye_bottom, average_right_eye_top) + epsilon
-    # Eye center y (midpoint between top and bottom eyelids)
+    # Eye center y
     left_eye_center_y = (average_left_eye_top[1] + average_left_eye_bottom[1]) / 2
     right_eye_center_y = (average_right_eye_top[1] + average_right_eye_bottom[1]) / 2
     # Iris centers
     left_iris_center = np.mean(np.array(leftiris_points)[:, :2], axis=0)
     right_iris_center = np.mean(np.array(rightiris_points)[:, :2], axis=0)
-    # Horizontal gaze position (iris relative to eye width)
+    # Horizontal gaze position
     left_horizontal_pos = (left_iris_center[0] - lefteye_points[0][0]) / left_eye_width
     right_horizontal_pos = (right_iris_center[0] - Righteye_points[0][0]) / right_eye_width
-    # Vertical gaze position normalized relative to eye center (not just top)
+    # Vertical gaze position normalized relative to eye center
     left_vertical_pos = (average_left_eye_bottom[1] - left_iris_center[1]) / left_eye_height
     right_vertical_pos = (average_right_eye_bottom[1] - right_iris_center[1]) / right_eye_height
     # Average horizontal and vertical gaze positions
@@ -246,18 +239,17 @@ def gaze_detection(lefteye_points, Righteye_points, leftiris_points, rightiris_p
     horizontal_gaze_smooth = sum(HORIZONTAL_HISTORY) / len(HORIZONTAL_HISTORY)
     vertical_gaze_smooth = sum(VERTICAL_HISTORY) / len(VERTICAL_HISTORY) 
     #debugging tesxt prob gonna deleate later
-    if debug:
-        print(f"Left iris center: {left_iris_center}, Right iris center: {right_iris_center}")
-        print(f"Left eye width: {left_eye_width:.3f}, height: {left_eye_height:.3f}")
-        print(f"Right eye width: {right_eye_width:.3f}, height: {right_eye_height:.3f}")
-        print(f"Left eye center y: {left_eye_center_y:.3f}, Right eye center y: {right_eye_center_y:.3f}")
-        print(f"Horizontal gaze raw: {horizontal_gaze:.3f}, smoothed: {horizontal_gaze_smooth:.3f}")
-        print(f"Vertical gaze raw: {vertical_gaze:.3f}, smoothed: {vertical_gaze_smooth:.3f}")
+    #if debug:
+        #print(f"Left iris center: {left_iris_center}, Right iris center: {right_iris_center}")
+        #print(f"Left eye width: {left_eye_width:.3f}, height: {left_eye_height:.3f}")
+        #print(f"Right eye width: {right_eye_width:.3f}, height: {right_eye_height:.3f}")
+        #print(f"Left eye center y: {left_eye_center_y:.3f}, Right eye center y: {right_eye_center_y:.3f}")
+        #print(f"Horizontal gaze raw: {horizontal_gaze:.3f}, smoothed: {horizontal_gaze_smooth:.3f}")
+        #print(f"Vertical gaze raw: {vertical_gaze:.3f}, smoothed: {vertical_gaze_smooth:.3f}")
 
     return horizontal_gaze_smooth, vertical_gaze_smooth, iris_x_norm, iris_y_norm, eye_width, eye_height
 
 def map_gaze_to_screen(horizontal_gaze, vertical_gaze, smoothing=SMOOTHING_FACTOR):
-    """Map gaze coordinates (0-1) to screen coordinates with smoothing"""
     global prev_mouse_x, prev_mouse_y
     
     # Flip horizontal so looking left moves cursor left(invert stuff)
@@ -274,10 +266,10 @@ def map_gaze_to_screen(horizontal_gaze, vertical_gaze, smoothing=SMOOTHING_FACTO
     
     return smooth_x, smooth_y
 
-def getPoints(table): #this thing is so frickin compicatedddddd(it is easy i jsut have nioo time to compleeteeee)
+def getPoints(table): #this thing is so frickin compicatedddddd
     return [landmarks_list[i] for i in table]
 
-#hoenstly idk why i need this but you need it(it is setup part dont blame me pleaaaaaaaaaaase)
+#hoenstly idk why i need this but you need it(it is setup part dont blame me)
 with mp_face_mesh.FaceMesh(
     max_num_faces=1,
     min_detection_confidence=0.5,
@@ -290,23 +282,21 @@ with mp_face_mesh.FaceMesh(
         key = cv2.waitKey(1) & 0xFF
         there, frame = webcam.read()  # reads camera every frame
         # default values for when no faces is detected cuz it cause eror for some reason (figuring out how to debug this took a whole frickin day)
-        label = None  # reset label each frame so it doesn't persist
-        # changing the output to something mediapip can undertand
+        label = None  
+        #media pipe data type conversion
         if there == True:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # gets rgb values for pixels in frame (yap)
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
             results = face_mesh.process(frame_rgb)
 
-            # going through all landmarks
             if results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
                     mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_CONTOURS)  # overlays landmarks over the frame (yap)
 
-                    # EXTRACT the points into a x and y and z list, idk how these expressions work. no time to research but they apparently make everything more accurate and optimized
                     height, width, _ = frame.shape
                     # CAMERA MATRIX HERE(Given 3D points of a face (nose, chin, eye corners, etc.) and their 2D positions in the camera image, how is the head rotated and positioned in 3D space? that is why we need this honestly hurts my brain)
                     focal_length = width  # how zoomed in the camera is
-                    center = (width / 2, height / 2)  # the center pixel
-                    camera_matrix = np.array([  # built the actual matrix
+                    center = (width / 2, height / 2) 
+                    camera_matrix = np.array([  #
                         [focal_length, 0, center[0]],
                         [0, focal_length, center[1]],
                         [0, 0, 1]
@@ -319,7 +309,6 @@ with mp_face_mesh.FaceMesh(
                         y_px = int(lm.y * height)
                         z = lm.z
                         landmarks_list.append((x_px, y_px, z))
-                    # getting x,y cordinates for the index of the thingies
                     head_pose_landmarks_2d_index_points = getPoints(head_pose_landmarks_2d_index)
 
                     # ACTUAL landmarks for eye tracking
@@ -343,15 +332,13 @@ with mp_face_mesh.FaceMesh(
                     # setting up list for Ai 2 wouhhhh
                     EAR_history.append(average_EAR)
 
-                    # Extract only x,y coordinates(ignore z)
+                    # Extract only x,y coordinates
                     image_points = np.array([(p[0], p[1]) for p in head_pose_landmarks_2d_index_points], dtype=np.float64)
 
                     # Convert 3D model points to numpy array for reasons to use it cuz AI dummy
                     model_points = np.array(head_pose_landmarks_3d_cordinates, dtype=np.float64)
-
-                    # call dunciton head pose
+                    #call functions
                     yaw, pitch, roll = head_Pose_Estimation(camera_matrix, image_points, model_points, dist_coeffs)
-                    # call gaze function
                     horizontal_gaze, vertical_gaze, iris_x_norm, iris_y_norm, eye_width, eye_height = gaze_detection(left_eye_points, right_eye_points, left_iris_points, right_iris_points,left_eye_boundaries_points, Right_eye_boundaries_points, debug=False)
 
                     
@@ -363,7 +350,7 @@ with mp_face_mesh.FaceMesh(
                     blink_rate = calculate_blink_rate(blink_timestamps)
                     avg_blink_duration = average_blink_duration(blink_durations_history)
 
-                    #displaying It for testing (and cuz cool)
+                    #displaying It for testing (and cuz cool
                     cv2.putText(frame, f'Left EARRR: {left_EAR:.2f}', (30, 30), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 255, 0), 2)
                     cv2.putText(frame, f'Right EARRR: {right_EAR:.2f}', (30, 60), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
                     cv2.putText(frame, f'Blinksss: {blinks}', (30, 90), cv2.FONT_HERSHEY_TRIPLEX, 0.7, (0, 255, 0), 2)
@@ -373,8 +360,7 @@ with mp_face_mesh.FaceMesh(
                     cv2.putText(frame, f'Rolll: {roll:.2f}', (30, 210), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.7, (0, 255, 0), 2)
                     cv2.putText(frame, f'Gaze Horizontalll: {horizontal_gaze:.2f}', (30, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
                     cv2.putText(frame, f'Gaze Verticalll: {vertical_gaze:.2f}', (30, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-                    # Show instructions on the frame(i dont need this anymore it was for testing but like cooooooooool)
-                    cv2.putText(frame, "just press keys(if you know what i mean you are eyad or understand this code)", (10, height - 40),
+                    cv2.putText(frame, "to train lable the frames by where yo are looking at (10, height - 40),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     cv2.putText(frame, f'Iris X Norm: {iris_x_norm:.2f} Iris Y Norm: {iris_y_norm:.2f}', (10, height - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -385,13 +371,12 @@ with mp_face_mesh.FaceMesh(
                     # Scale features 
                     features_scaled = scaler.transform(features)
 
-                    # Predict class probabilitiesn (every 3 frames just for performance)
+                    # Predict class probabilitiesn)
                     if total_frame % 3 == 0:
                         pred_probs = model.predict(features_scaled, verbose=0)
                         predicted_class_index = np.argmax(pred_probs)
                         predicted_label = label_classes[predicted_class_index]
 
-                    #N predicted_label
                     cv2.putText(frame, f'Predicted Gaze: {predicted_label}', (30, 300),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
@@ -416,7 +401,7 @@ with mp_face_mesh.FaceMesh(
                         predicted_class_index_blink = np.argmax(pred_probs_blink)
                         predicted_label_blink = blink_classes[predicted_class_index_blink] 
                     else:
-                         #fallback heuristic (just in case AI not work)
+                         #fallback math stuff (just in case AI not work)
                         if avg_blink_duration > 0.5 or longest_eye_close > 1.0:
                             predicted_label_blink = "Very Tired"
                         elif blink_rate < 0.05:
@@ -424,10 +409,10 @@ with mp_face_mesh.FaceMesh(
                         else:
                             predicted_label_blink = "Normal"
 
-                    # Display drowsiness prediction
+                    # Display prediction
                     cv2.putText(frame, f'Drowsiness: {predicted_label_blink}', (30, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-                    # key press to set label (moved before CSV writing)
+                    # key press to set label
                     if key == ord('l') or key == ord('L'):
                         label = "Left"
                     elif key == ord('r') or key == ord('R'):
@@ -445,7 +430,7 @@ with mp_face_mesh.FaceMesh(
                     elif key == ord('v') or key == ord('V'):
                         label = "Very Tired"
                     
-                    # Prepare the full frame data row including label (or empty string if no label) for AI 1 and 2
+                    # Prepare the full frame data row including label  for AI 1 and 2
                     frame_data = [
                         total_frame, left_EAR, right_EAR, average_EAR, blinks,
                         blink_duration, yaw, pitch, roll, horizontal_gaze, vertical_gaze,
@@ -457,16 +442,14 @@ with mp_face_mesh.FaceMesh(
                         csv_file.flush()
                         print(f"Saved frame {total_frame} with label {label}")
                     total_frame += 1
+                    #now we do the alarm stuff
                     if MODE == "Driver_Safety":
                         current_time = time.time()
                         
-                        # --- Check if not looking center ---
                         if predicted_label != "Center":
-                            # Start the timer if this is the first frame they looked away
                             if not_center_start_time is None:
                                 not_center_start_time = current_time
                             
-                            # Check if they've been looking away for 5+ seconds
                             time_looking_away = current_time - not_center_start_time
                             if time_looking_away >= ALERT_DELAY_SECONDS:
                                 if alert_cooldown <= 0:
@@ -482,9 +465,7 @@ with mp_face_mesh.FaceMesh(
                             # Reset timer when looking at center
                             not_center_start_time = None
                         
-                        # --- Check if very tired ---
                         if predicted_label_blink == "Very Tired":
-                            # Start the timer if this is the first frame they became tired
                             if tired_start_time is None:
                                 tired_start_time = current_time
                             
@@ -501,7 +482,6 @@ with mp_face_mesh.FaceMesh(
                                         (width//2 - 250, 150),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                         else:
-                            # Reset timer when not tired
                             tired_start_time = None
                         
                         # Update cooldown counter
@@ -528,7 +508,7 @@ with mp_face_mesh.FaceMesh(
                         cv2.circle(frame, (int(horizontal_gaze * width), int(vertical_gaze * height)), 
                                 10, (0, 255, 255), 2)
 
-            cv2.imshow("6.7Eyad is so coooool", frame)  # show the frame (with landmarks)
+            cv2.imshow("I hate science fair from the bottom of my heart never doing this again in my life", frame)  # show the frame (with landmarks)
 
         
 
@@ -537,7 +517,8 @@ with mp_face_mesh.FaceMesh(
             stop = True
         elif there == False:
             print("there is no webcam idiot")
-            #Prevents lag
+#finishhhhhhhhhhhhhhhhhh
 csv_file.close()
 webcam.release()
 cv2.destroyAllWindows()
+
