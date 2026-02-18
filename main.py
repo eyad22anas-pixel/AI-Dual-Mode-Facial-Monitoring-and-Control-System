@@ -363,7 +363,7 @@ with mp_face_mesh.FaceMesh(
                     cv2.putText(frame, f'Rolll: {roll:.2f}', (30, 210), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.7, (0, 255, 0), 2)
                     cv2.putText(frame, f'Gaze Horizontalll: {horizontal_gaze:.2f}', (30, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
                     cv2.putText(frame, f'Gaze Verticalll: {vertical_gaze:.2f}', (30, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-                   cv2.putText(frame, "to train lable the frames by where yo are looking at", (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    cv2.putText(frame, "to train lable the frames by where yo are looking at", (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     cv2.putText(frame, f'Iris X Norm: {iris_x_norm:.2f} Iris Y Norm: {iris_y_norm:.2f}', (10, height - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
@@ -524,5 +524,6 @@ with mp_face_mesh.FaceMesh(
 csv_file.close()
 webcam.release()
 cv2.destroyAllWindows()
+
 
 
