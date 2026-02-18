@@ -8,7 +8,6 @@ import tensorflow as tf
 df = pd.read_csv("datafoeAI1.csv", on_bad_lines='skip', engine='python')
 
 # laod data
-#limit the data to what we need 
 drowsiness_labels = ['Normal', 'Tired', 'Very Tired']
 df = df[df['Label'].isin(drowsiness_labels)]
 
@@ -24,16 +23,16 @@ features = df[[
 
 labels = df["Label"].values
 
-# ENCODE LABELS (so ai understand)
+# encoed data
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(labels)
 
-# split the data into 8-2 ratio to train and test
+# split the data 
 X_train, X_test, y_train, y_test = train_test_split(
     features, y_encoded, test_size=0.2, random_state=42
 )
 
-# normalizing input this is needed for some reason
+# normalizing input
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -66,9 +65,10 @@ history = model.fit(
 loss, accuracy = model.evaluate(X_test_scaled, y_test)
 print(f"\nTest Accuracy: {accuracy * 100:.2f}%")
 
-# 9. SAVE MODEL and the stuff that it does
+# 9.save
 model.save("blink_ear_aggregate_model.keras")
 np.save("blink_ear_label_classes.npy", label_encoder.classes_)
 np.save("blink_ear_scaler_mean.npy", scaler.mean_)
 np.save("blink_ear_scaler_scale.npy", scaler.scale_)
 #Test Accuracy: 81.82%% (sheeeeeeeeeesh crazy)
+
