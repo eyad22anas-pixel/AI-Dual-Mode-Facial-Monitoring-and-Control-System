@@ -19,7 +19,7 @@ os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 MODE = input("Which mode Driver_Safety or Mouse (very case sensetive)")
 #AI yap loading AI stuff
 model = tf.keras.models.load_model("gaze_direction_model.keras")
-label_classes = np.load("gaze_label_classes.npy",allow_pickle= True
+label_classes = np.load("gaze_label_classes.npy",allow_pickle= True)
 scaler_blink_mean = np.load("blink_ear_scaler_mean.npy", allow_pickle= True) #Pickle is Python's way of saving complex data (pickle realy???)
 scaler_blink_scale = np.load("blink_ear_scaler_scale.npy",allow_pickle= True) 
 scaler_blink = StandardScaler()
@@ -30,6 +30,9 @@ scaler_blink.n_features_in_ = 5
 model_blink = tf.keras.models.load_model("blink_ear_aggregate_model.keras")
 blink_classes = np.load("blink_ear_label_classes.npy", allow_pickle= True)
 
+#safe gured if model does not work
+predicted_label = "idk"
+predicted_label_blink = "why would i kow"
 #stuff for alert
 alert_cooldown = 0  
 ALERT_COOLDOWN_FRAMES = 60  
@@ -360,8 +363,7 @@ with mp_face_mesh.FaceMesh(
                     cv2.putText(frame, f'Rolll: {roll:.2f}', (30, 210), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.7, (0, 255, 0), 2)
                     cv2.putText(frame, f'Gaze Horizontalll: {horizontal_gaze:.2f}', (30, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
                     cv2.putText(frame, f'Gaze Verticalll: {vertical_gaze:.2f}', (30, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-                    cv2.putText(frame, "to train lable the frames by where yo are looking at (10, height - 40),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                   cv2.putText(frame, "to train lable the frames by where yo are looking at", (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     cv2.putText(frame, f'Iris X Norm: {iris_x_norm:.2f} Iris Y Norm: {iris_y_norm:.2f}', (10, height - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
@@ -372,6 +374,7 @@ with mp_face_mesh.FaceMesh(
                     features_scaled = scaler.transform(features)
 
                     # Predict class probabilitiesn)
+                    predicted_label = "idk"
                     if total_frame % 3 == 0:
                         pred_probs = model.predict(features_scaled, verbose=0)
                         predicted_class_index = np.argmax(pred_probs)
@@ -521,4 +524,5 @@ with mp_face_mesh.FaceMesh(
 csv_file.close()
 webcam.release()
 cv2.destroyAllWindows()
+
 
