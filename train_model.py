@@ -16,7 +16,6 @@ df = df.dropna()
 
 # Input features
 featuers_needed = df[["iris_x_norm", "iris_y_norm", "eye_width", "eye_height"]].values
-#filted labels
 # Output labels
 labels_putputted= df["Label"].values
 
@@ -24,17 +23,17 @@ labels_putputted= df["Label"].values
 encode_for_x = LabelEncoder()
 y_encoded = encode_for_x.fit_transform(labels_putputted)
 
-# 3. TRAIN/TEST SPLIT ( now splits the features, not the encoder)
+# 3. split data
 X_train, X_test, y_train, y_test = train_test_split(
     featuers_needed, y_encoded, test_size=0.2, random_state=42
 )
 
-# 4. NORMALIZE INPUTS
+# 4. norm input
 scaler = StandardScaler()
 X_train_yes = scaler.fit_transform(X_train)
 X_test_no = scaler.transform(X_test)
 
-# 5. BUILD MODEL
+# 5.build nn
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(64, activation='relu', input_shape=(4,)),
     tf.keras.layers.BatchNormalization(),
@@ -52,7 +51,6 @@ model.compile(
 
 model.summary()
 
-#cus cool
 #information
 history = model.fit(
     X_train_yes, y_train,
@@ -61,13 +59,14 @@ history = model.fit(
     validation_split=0.2,
 )
 
-#EVALUATE cuz cooool
+#evaluate loss
 loss, acccc = model.evaluate(X_test_no, y_test)
 print(f"\nTest Accuracy: {acccc*100:.2f}%")
 
-# 8. SAVE MODEL + LABELS + SCALER+cooool
+# 8. save stuff
 model.save("gaze_direction_model.keras")
 np.save("gaze_label_classes.npy", encode_for_x.classes_)
 np.save("gaze_scaler_mean.npy", scaler.mean_)
 np.save("gaze_scaler_scale.npy", scaler.scale_)
 joblib.dump(scaler, "scaler.pkl")
+
